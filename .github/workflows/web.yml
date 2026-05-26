@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - web
-      - main
     paths:
       - '.github/workflows/web.yml'
       - 'lib/**'

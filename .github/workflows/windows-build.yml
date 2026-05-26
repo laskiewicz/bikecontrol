@@ -1,0 +1,64 @@
+name: Build Windows Release
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+env:
+  FLUTTER_VERSION: 3.41.4
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create pubspec_overrides.yaml
+        shell: pwsh
+        run: |
+          $overrides = @'
+          dependency_overrides:
+            font_awesome_flutter: ^11.0.0
+          '@
+          $overrides | Set-Content -Path "pubspec_overrides.yaml" -Encoding utf8
+
+      - name: Install Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+
+      - name: Enable Windows Desktop
+        run: flutter config --enable-windows-desktop
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install NuGet
+        uses: NuGet/setup-nuget@v2
+
+      - name: Install Visual Studio components
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Flutter Doctor
+        run: flutter doctor
+
+      - name: Get Dependencies
+        run: flutter pub get
+
+      - name: Generate intl files
+        run: flutter pub run intl_utils:generate
+
+      - name: Build Windows Release
+        run: flutter build windows --release -v
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: swiftcontrol-windows
+          path: build/windows/x64/runner/Release/
